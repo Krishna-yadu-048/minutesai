@@ -19,6 +19,8 @@ def friendly_error(error: Exception) -> str:
         return "The provider rejected this API key. Check it and try again."
     if isinstance(error, openai.RateLimitError):
         return "Rate limit or quota reached. Wait a minute, or check your billing."
+    if isinstance(error, openai.NotFoundError):
+        return "Model not found. The provider may have renamed or retired it; check config.py."
     if isinstance(error, openai.APITimeoutError):
         return "The provider took too long to respond. Please try again."
     if isinstance(error, openai.APIConnectionError):

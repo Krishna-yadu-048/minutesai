@@ -1,7 +1,7 @@
 [project]
 name = "minutesai"
 version = "0.1.0"
-description = "Add your description here"
+description = "Turn meeting and lecture recordings into structured minutes, using OpenAI or open-source models on Groq."
 readme = "README.md"
 authors = [
     { name = "Krishna-yadu-048", email = "krishnayadu048@gmail.com" }
@@ -17,9 +17,6 @@ dependencies = [
     "python-multipart>=0.0.32",
     "uvicorn>=0.54.0",
 ]
-
-[project.scripts]
-minutesai = "minutesai:main"
 
 [build-system]
 requires = ["uv_build>=0.12.18,<0.13.0"]
