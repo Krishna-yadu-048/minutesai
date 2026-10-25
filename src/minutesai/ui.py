@@ -6,7 +6,7 @@ from pathlib import Path
 import gradio as gr
 
 from minutesai.config import PROVIDERS
-from minutesai.llm import make_client, summarise, transcribe_file
+from minutesai.llm import create_minutes, make_client
 from minutesai.safety import friendly_error, redact
 from minutesai.schema import to_markdown
 
@@ -89,16 +89,11 @@ def generate(
     if not audio_path and not pasted_text.strip():
         raise gr.Error("Upload a recording or paste a transcript.")
 
-    settings = PROVIDERS[provider]
+    progress(0.1, desc="Working... long recordings take a few minutes.")
     try:
-        client = make_client(provider, api_key)
-        if pasted_text.strip():
-            transcript = pasted_text.strip()
-        else:
-            progress(0.2, desc="Transcribing audio (long recordings take a few minutes)...")
-            transcript = transcribe_file(client, audio_path, settings["asr_model"])
-        progress(0.6, desc="Writing minutes...")
-        minutes = summarise(client, transcript, settings["llm_model"])
+        minutes, transcript = create_minutes(
+            provider, api_key, audio_path=audio_path, transcript=pasted_text
+        )
     except Exception as error:
         logger.warning("Generation failed: %s", redact(str(error)))
         raise gr.Error(friendly_error(error)) from None

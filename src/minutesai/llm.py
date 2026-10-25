@@ -73,3 +73,15 @@ def summarise(client: OpenAI, transcript: str, model: str) -> Minutes:
         ]
         reply = ask_for_json(client, messages, model)
         return Minutes.model_validate_json(reply)  # if this fails too, the UI shows an error
+
+
+def create_minutes(
+    provider: str, api_key: str, audio_path: str | None = None, transcript: str = ""
+) -> tuple[Minutes, str]:
+    """The full pipeline: transcribe if needed, then summarise. Used by the UI and the API."""
+    settings = PROVIDERS[provider]
+    client = make_client(provider, api_key)
+    if not transcript.strip():
+        transcript = transcribe_file(client, audio_path, settings["asr_model"])
+    minutes = summarise(client, transcript.strip(), settings["llm_model"])
+    return minutes, transcript.strip()
