@@ -1,11 +1,23 @@
 from openai import OpenAI
+from pydantic import ValidationError
 
 from minutesai.config import PROVIDERS
+from minutesai.schema import Minutes
 
 SYSTEM_PROMPT = """You produce minutes of meetings from transcripts.
 Use only facts stated in the transcript; never invent names, dates or owners.
-Write in markdown with these sections: Summary (with attendees, location and date
-if stated), Discussion points, Takeaways, and Action items with owners."""
+If something isn't stated, use null or an empty list.
+
+Reply with a JSON object only, in exactly this shape:
+{
+  "title": "short descriptive title",
+  "date": "date if stated, else null",
+  "attendees": ["names of people present or speaking"],
+  "summary": "3-6 sentence summary",
+  "discussion_points": ["..."],
+  "decisions": ["decisions or motions passed"],
+  "action_items": [{"task": "...", "owner": "name or null", "due": "date or null"}]
+}"""
 
 
 def make_client(provider: str, api_key: str) -> OpenAI:
@@ -21,10 +33,31 @@ def transcribe(client: OpenAI, audio_path: str, model: str) -> str:
         )
 
 
-def summarise(client: OpenAI, transcript: str, model: str) -> str:
+def ask_for_json(client: OpenAI, messages: list[dict], model: str) -> str:
+    """Send the conversation in JSON mode and return the reply text."""
+    response = client.chat.completions.create(
+        model=model, messages=messages, response_format={"type": "json_object"}
+    )
+    return response.choices[0].message.content
+
+
+def summarise(client: OpenAI, transcript: str, model: str) -> Minutes:
+    """Turn a transcript into validated Minutes, retrying once if the JSON is bad."""
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": f"Write minutes for this transcript:\n\n{transcript}"},
     ]
-    response = client.chat.completions.create(model=model, messages=messages)
-    return response.choices[0].message.content
+    reply = ask_for_json(client, messages, model)
+    try:
+        return Minutes.model_validate_json(reply)
+    except ValidationError as error:
+        # One retry: show the model its reply and what was wrong with it.
+        messages += [
+            {"role": "assistant", "content": reply},
+            {
+                "role": "user",
+                "content": f"That JSON was invalid:\n{error}\nReply with corrected JSON only.",
+            },
+        ]
+        reply = ask_for_json(client, messages, model)
+        return Minutes.model_validate_json(reply)  # if this fails too, the UI shows an error

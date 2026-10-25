@@ -2,6 +2,7 @@
 import re
 
 import openai
+from pydantic import ValidationError
 
 # Matches OpenAI keys (sk-..., sk-proj-...) and Groq keys (gsk_...)
 KEY_PATTERN = re.compile(r"(sk-|gsk_)[A-Za-z0-9_\-]{8,}")
@@ -22,4 +23,6 @@ def friendly_error(error: Exception) -> str:
         return "The provider took too long to respond. Please try again."
     if isinstance(error, openai.APIConnectionError):
         return "Couldn't reach the provider. Check your internet connection."
+    if isinstance(error, ValidationError):
+        return "The model's answer wasn't in the expected format. Try again or switch provider."
     return f"Something went wrong ({type(error).__name__}). Please try again."

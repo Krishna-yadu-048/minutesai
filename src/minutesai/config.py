@@ -6,12 +6,14 @@ PROVIDERS = {
         "asr_model": "gpt-4o-mini-transcribe",
         "llm_model": "gpt-4.1-mini",
         "env_var": "OPENAI_API_KEY",
+        "key_url": "https://platform.openai.com/api-keys",
     },
     "Groq": {
         "base_url": "https://api.groq.com/openai/v1",
         "asr_model": "whisper-large-v3-turbo",
-        "llm_model": "llama-3.3-70b-versatile",
+        "llm_model": "openai/gpt-oss-120b",
         "env_var": "GROQ_API_KEY",
+        "key_url": "https://console.groq.com/keys",
     },
 }
 
