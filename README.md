@@ -1,6 +1,9 @@
 # MinutesAI
 
 [![CI](https://github.com/Krishna-yadu-048/minutesai/actions/workflows/ci.yml/badge.svg)](https://github.com/Krishna-yadu-048/minutesai/actions/workflows/ci.yml)
+![Python 3.12](https://img.shields.io/badge/python-3.12-blue)
+![License: MIT](https://img.shields.io/badge/license-MIT-green)
+![Ruff](https://img.shields.io/badge/code%20style-ruff-261230)
 
 Turn a meeting or lecture recording into structured minutes: summary, attendees, discussion points, decisions and action items with owners.
 
@@ -39,6 +42,20 @@ Both the UI and the API call the same `create_minutes()` function, so there's on
 | Groq | `whisper-large-v3-turbo` | `openai/gpt-oss-120b` | Yes (open weights) |
 
 Model names live in `src/minutesai/config.py`, so a retired model is a one-line change.
+
+## Design decisions
+
+- **One pipeline, two interfaces.** The Gradio UI and the FastAPI endpoint both call
+  `create_minutes()`, so there's no duplicated logic to keep in sync.
+- **Bring-your-own key.** Keys live in per-session state (UI) or a request header (API)
+  and are never stored or logged, so the app can be shared without spending my quota.
+- **Structured output over free text.** The LLM returns JSON validated by Pydantic, with
+  one automatic retry, so output is consistent across providers and safe for the API.
+- **Providers in config, not code.** When Groq retired `llama-3.3-70b-versatile` during
+  development, switching to `gpt-oss-120b` was a one-line change.
+- **Tests without API calls.** All provider calls are mocked, so CI runs free and fast
+  and never needs real keys.
+
 
 ## Quick start
 
@@ -124,6 +141,13 @@ uv run ruff format .
 uv run ruff check .
 uv run pytest
 ```
+
+## What I learned
+
+- Turning a notebook into a maintainable package with `uv` and a `src` layout
+- Handling unreliable LLM output with schema validation and retries
+- Serving a Gradio UI and a FastAPI API from one server
+- Testing LLM code with mocks, and running checks in GitHub Actions
 
 ## Limitations
 
