@@ -12,7 +12,7 @@ wheels/
 # Secrets
 .env
 .env.*
-!.env.example
+.env.example
 
 # Gradio and audio files
 .gradio/
