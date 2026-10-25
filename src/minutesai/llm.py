@@ -1,6 +1,9 @@
+import tempfile
+
 from openai import OpenAI
 from pydantic import ValidationError
 
+from minutesai.audio import needs_splitting, split_audio
 from minutesai.config import PROVIDERS
 from minutesai.schema import Minutes
 
@@ -31,6 +34,15 @@ def transcribe(client: OpenAI, audio_path: str, model: str) -> str:
         return client.audio.transcriptions.create(
             model=model, file=audio_file, response_format="text"
         )
+
+
+def transcribe_file(client: OpenAI, audio_path: str, model: str) -> str:
+    """Transcribe any length of recording, splitting it first if it's too big."""
+    if not needs_splitting(audio_path):
+        return transcribe(client, audio_path, model)
+    with tempfile.TemporaryDirectory() as folder:  # deleted automatically afterwards
+        chunks = split_audio(audio_path, folder)
+        return " ".join(transcribe(client, chunk, model) for chunk in chunks)
 
 
 def ask_for_json(client: OpenAI, messages: list[dict], model: str) -> str:

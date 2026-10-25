@@ -5,8 +5,8 @@ from pathlib import Path
 
 import gradio as gr
 
-from minutesai.config import MAX_AUDIO_MB, PROVIDERS
-from minutesai.llm import make_client, summarise, transcribe
+from minutesai.config import PROVIDERS
+from minutesai.llm import make_client, summarise, transcribe_file
 from minutesai.safety import friendly_error, redact
 from minutesai.schema import to_markdown
 
@@ -88,8 +88,6 @@ def generate(
         raise gr.Error(f"Add your {provider} API key first.")
     if not audio_path and not pasted_text.strip():
         raise gr.Error("Upload a recording or paste a transcript.")
-    if audio_path and Path(audio_path).stat().st_size > MAX_AUDIO_MB * 1024 * 1024:
-        raise gr.Error(f"The recording is over {MAX_AUDIO_MB} MB. Long-audio support comes later.")
 
     settings = PROVIDERS[provider]
     try:
@@ -97,8 +95,8 @@ def generate(
         if pasted_text.strip():
             transcript = pasted_text.strip()
         else:
-            progress(0.2, desc="Transcribing audio...")
-            transcript = transcribe(client, audio_path, settings["asr_model"])
+            progress(0.2, desc="Transcribing audio (long recordings take a few minutes)...")
+            transcript = transcribe_file(client, audio_path, settings["asr_model"])
         progress(0.6, desc="Writing minutes...")
         minutes = summarise(client, transcript, settings["llm_model"])
     except Exception as error:
@@ -135,7 +133,7 @@ def build_ui() -> gr.Blocks:
                 audio = gr.Audio(
                     sources=["upload"],
                     type="filepath",
-                    label=f"Recording (up to {MAX_AUDIO_MB} MB)",
+                    label="Recording",
                 )
                 pasted = gr.Textbox(label="...or paste a transcript instead", lines=5)
                 generate_btn = gr.Button("Generate minutes", variant="primary")
